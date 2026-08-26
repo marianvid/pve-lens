@@ -2,7 +2,7 @@
 
 A compact dashboard for understanding a Proxmox host at a glance: system health, service activity, physical storage topology and network traffic.
 
-[![Proxmox VE Lens overview](docs/images/overview.jpg)](docs/images/overview.jpg)
+[![Proxmox VE Lens overview](docs/images/overview.png)](docs/images/overview.png)
 
 ## Views
 
