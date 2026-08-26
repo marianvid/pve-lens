@@ -32,7 +32,21 @@
 /* Match Storage and Network typography to the Overview scale. */
 .network-rail .status-item>span,.network-rail .status-item>strong,.network-rail .pair{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px}.network-rail .status-item>span{font-weight:400}.network-rail .status-item>strong,.network-rail .pair b{font-weight:600}
 .plain-list .service-name strong{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;font-weight:700}.plain-list .service-name small{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:400}.plain-list .row-flows{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:600}
-.disk-summary strong,.volume-row strong{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;font-weight:700}.disk-summary small,.disk-identity .quiet-label,.disk-live small,.volume-row small{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:400}.disk-live>span{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:600}.volume-row{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px}.volume-row>span{font-size:10px;font-weight:400}.volume-row>span:nth-of-type(2),.volume-meter small{font-weight:600}
+.disk-summary strong,.volume-row strong{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:13px;font-weight:700}.disk-summary small,.disk-identity .quiet-label,.disk-live small,.volume-row small{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:400}.disk-live>span{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px;font-weight:600}.volume-row{font-family:var(--font-geist-sans),system-ui,sans-serif;font-size:10px}.volume-row>span,.volume-meter small{font-size:10px;font-weight:600}
 
-@media(max-width:820px){.disk-summary{align-items:flex-start;flex-direction:column}.disk-live{width:100%;justify-content:space-between}.volume-row{align-items:flex-start;flex-wrap:wrap}.volume-row>div:first-child{flex-basis:100%}.row-flows{overflow-x:auto;justify-content:flex-start}.plain-row{align-items:flex-start}}
+/* Compact, left-aligned data grids keep labels and values visually related. */
+.storage-list,.network-rail,.physical-link-row{max-width:1120px}.service-traffic-list{width:min(760px,100%)}
+.disk-summary{display:grid;grid-template-columns:minmax(280px,520px) auto;justify-content:start;align-items:end;column-gap:40px}
+.disk-live{display:grid;grid-template-columns:90px 70px 220px;justify-content:start;column-gap:24px}
+.volume-row{display:grid;grid-template-columns:minmax(300px,560px) 180px 150px;justify-content:start;column-gap:22px}
+.volume-meter{width:150px}
+.plain-row{display:grid;grid-template-columns:280px auto;justify-content:start;column-gap:32px}
+.row-flows{display:grid;justify-content:start;column-gap:24px}
+.physical-link-row .row-flows{grid-template-columns:100px 100px 90px 130px 130px}
+.service-traffic-row .row-flows{grid-template-columns:100px 100px 120px}
+.network-rail .rail-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,180px));justify-content:start;column-gap:28px}
+.network-rail .status-item,.network-rail .status-item+.status-item{padding-left:0;padding-right:0}
+.network-rail .status-item+.status-item::before{display:none}
+
+@media(max-width:820px){.disk-summary{grid-template-columns:1fr;row-gap:10px}.disk-live{width:100%;grid-template-columns:90px 70px minmax(190px,220px)}.volume-row{display:flex;align-items:flex-start;flex-wrap:wrap}.volume-row>div:first-child{flex-basis:100%}.plain-row{display:flex;align-items:flex-start}.row-flows{display:flex;overflow-x:auto;justify-content:flex-start}.network-rail .rail-row{display:flex}}
 @media(max-width:560px){.shell{padding:0 14px 32px}.topbar{min-height:64px}.node-state time{display:none}.tabs{gap:24px}.tab-content{padding-top:20px}.rail-row{padding:0 16px}.status-item{padding-right:30px}.status-item+.status-item{padding-left:24px}.rail-name{margin-right:24px}.disk-live{flex-wrap:wrap;justify-content:flex-start}.volume-list{margin-left:8px}.volume-meter{width:130px}.plain-row{flex-direction:column;gap:12px}.row-flows{width:100%}}

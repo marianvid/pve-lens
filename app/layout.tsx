@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Proxmox VE Lens',
-  description: 'Read-only Proxmox storage topology and live guest activity.',
+  description: 'Read-only Proxmox storage topology and live service activity.',
 };
 
 export default function RootLayout({
