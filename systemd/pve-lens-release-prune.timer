@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep a two-version PVE Lens release window
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1d
+Persistent=true
+Unit=pve-lens-release-prune.service
+
+[Install]
+WantedBy=timers.target

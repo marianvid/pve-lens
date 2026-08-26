@@ -1,0 +1,6 @@
+[Unit]
+Description=Prune old PVE Lens dashboard releases
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/pve-lens-prune-releases

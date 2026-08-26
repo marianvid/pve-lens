@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-08-26T07:42:15Z",
+  "node": {
+    "name": "pve-host",
+    "cpu": 0.184,
+    "busiestCore": 0.421,
+    "cpuFrequencyGhz": 3.8,
+    "memoryUsed": 12670153523,
+    "memoryTotal": 68719476736,
+    "uptime": 1058400,
+    "cpuCount": 16,
+    "load1": 1.2,
+    "load5": 1.1,
+    "load15": 0.9,
+    "interfaces": [
+      {"name": "uplink0", "status": "up", "speedMbps": 2500, "received": 483183820800, "transmitted": 174483046400, "receiveRate": 18874368, "transmitRate": 4194304, "loadPercent": 6.0},
+      {"name": "uplink1", "status": "down", "speedMbps": 0, "received": 0, "transmitted": 0, "receiveRate": 0, "transmitRate": 0, "loadPercent": 0},
+      {"name": "wifi0", "status": "down", "speedMbps": 0, "received": 0, "transmitted": 0, "receiveRate": 0, "transmitRate": 0, "loadPercent": 0}
+    ]
+  },
+  "totals": {
+    "readRate": 50331648,
+    "writeRate": 12582912,
+    "diskBusyPercent": 24,
+    "receiveRate": 18874368,
+    "transmitRate": 4194304,
+    "networkLoadPercent": 6.0
+  },
+  "hardware": {
+    "cpuTemperature": 48,
+    "memoryTemperature": 44,
+    "hddTemperature": null,
+    "hddState": "sleeping",
+    "ssds": [
+      {"name": "nvme0n1", "model": "System SSD", "passed": true, "temperature": 46, "lifeUsedPercent": 3, "availableSparePercent": 100, "mediaErrors": 0},
+      {"name": "nvme1n1", "model": "VM SSD", "passed": true, "temperature": 43, "lifeUsedPercent": 5, "availableSparePercent": 100, "mediaErrors": 0},
+      {"name": "nvme2n1", "model": "Backup SSD", "passed": true, "temperature": 39, "lifeUsedPercent": 2, "availableSparePercent": 100, "mediaErrors": 0}
+    ],
+    "gpu": {"name": "NVIDIA GPU", "temperature": 41, "utilization": 12, "memoryUsedMb": 3277, "memoryTotalMb": 24576, "powerWatts": 28, "fanPercent": 0}
+  },
+  "disks": [
+    {
+      "name": "nvme0n1", "path": "/dev/nvme0n1", "model": "System SSD 4 TB", "size": 4398046511104, "transport": "nvme", "rotational": false, "mountpoint": "LVM", "used": 1099511627776, "usagePercent": 25, "readRate": 25165824, "writeRate": 6291456, "busyPercent": 14,
+      "volumes": [
+        {"name": "system", "path": "/dev/pve/system", "size": 137438953472, "used": 51539607552, "usagePercent": 37.5, "kind": "LVM", "mountpoint": "/"},
+        {"name": "vm-storage", "path": "/dev/pve/vm-storage", "size": 3298534883328, "used": 824633720832, "dataPercent": 25, "usagePercent": 25, "kind": "thin pool"},
+        {"name": "vm-201-disk-0", "path": "/dev/pve/vm-201-disk-0", "size": 274877906944, "dataPercent": 32, "usagePercent": 32, "kind": "thin volume", "vmid": 201}
+      ]
+    },
+    {
+      "name": "nvme1n1", "path": "/dev/nvme1n1", "model": "Workload SSD 2 TB", "size": 2199023255552, "transport": "nvme", "rotational": false, "mountpoint": "/mnt/workloads", "used": 769658139443, "usagePercent": 35, "readRate": 18874368, "writeRate": 4194304, "busyPercent": 24,
+      "volumes": [
+        {"name": "workloads", "path": "/dev/nvme1n1p1", "size": 2199023255552, "used": 769658139443, "usagePercent": 35, "kind": "ext4", "mountpoint": "/mnt/workloads"},
+        {"name": "container-202", "path": "/mnt/workloads/container-202", "size": 274877906944, "used": 96636764160, "usagePercent": 35, "kind": "directory", "vmid": 202}
+      ]
+    },
+    {
+      "name": "nvme2n1", "path": "/dev/nvme2n1", "model": "Backup SSD 4 TB", "size": 4398046511104, "transport": "nvme", "rotational": false, "mountpoint": "/mnt/backups", "used": 879609302221, "usagePercent": 20, "readRate": 6291456, "writeRate": 2097152, "busyPercent": 5,
+      "volumes": [
+        {"name": "backups", "path": "/dev/nvme2n1p1", "size": 4398046511104, "used": 879609302221, "usagePercent": 20, "kind": "ext4", "mountpoint": "/mnt/backups"}
+      ]
+    },
+    {
+      "name": "sda", "path": "/dev/sda", "model": "Archive HDD 8 TB", "size": 8796093022208, "transport": "sata", "rotational": true, "mountpoint": "/mnt/archive", "used": 3958241859994, "usagePercent": 45, "readRate": 0, "writeRate": 0, "busyPercent": 0,
+      "volumes": [
+        {"name": "archive", "path": "/dev/sda1", "size": 8796093022208, "used": 3958241859994, "usagePercent": 45, "kind": "ext4", "mountpoint": "/mnt/archive"}
+      ]
+    }
+  ],
+  "guests": [
+    {"vmid": 201, "name": "web-service", "type": "lxc", "status": "running", "cpu": 0.024, "mem": 1503238553, "maxmem": 8589934592, "disk": 19327352832, "maxdisk": 68719476736, "readRate": 430080, "writeRate": 97280, "receiveRate": 4194304, "transmitRate": 921600},
+    {"vmid": 202, "name": "database", "type": "lxc", "status": "running", "cpu": 0.081, "mem": 3521873183, "maxmem": 8589934592, "disk": 68719476736, "maxdisk": 137438953472, "readRate": 2097152, "writeRate": 6291456, "receiveRate": 1048576, "transmitRate": 2097152},
+    {"vmid": 203, "name": "worker", "type": "lxc", "status": "running", "cpu": 0.142, "mem": 2147483648, "maxmem": 8589934592, "disk": 12884901888, "maxdisk": 68719476736, "readRate": 8388608, "writeRate": 1048576, "receiveRate": 6291456, "transmitRate": 1048576},
+    {"vmid": 204, "name": "monitoring", "type": "lxc", "status": "running", "cpu": 0.011, "mem": 943718400, "maxmem": 8589934592, "disk": 8589934592, "maxdisk": 68719476736, "readRate": 12288, "writeRate": 4096, "receiveRate": 81920, "transmitRate": 24576},
+    {"vmid": 205, "name": "backup", "type": "qemu", "status": "stopped", "cpu": 0, "mem": 0, "maxmem": 17179869184, "disk": 0, "maxdisk": 274877906944, "readRate": 0, "writeRate": 0, "receiveRate": 0, "transmitRate": 0},
+    {"vmid": 206, "name": "development", "type": "qemu", "status": "stopped", "cpu": 0, "mem": 0, "maxmem": 17179869184, "disk": 0, "maxdisk": 274877906944, "readRate": 0, "writeRate": 0, "receiveRate": 0, "transmitRate": 0}
+  ],
+  "warnings": []
+}

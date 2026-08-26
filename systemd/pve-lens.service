@@ -1,0 +1,25 @@
+[Unit]
+Description=PVE Lens dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pve-lens
+Group=pve-lens
+WorkingDirectory=/opt/pve-lens/current
+Environment=PVE_LENS_SNAPSHOT=/data/snapshot.json
+Environment=HOSTNAME=0.0.0.0
+Environment=PORT=8080
+Environment=HOME=/tmp
+ExecStart=/usr/local/bin/npm run start
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target
