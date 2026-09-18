@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +21,8 @@ ROTATIONAL_STATUS = Path(os.environ.get("PVE_LENS_ROTATIONAL_STATUS", "/run/pve-
 ROTATIONAL_TEMP_KEY = os.environ.get("PVE_LENS_ROTATIONAL_TEMP_KEY", "temperature")
 ROTATIONAL_USAGE_KEY = os.environ.get("PVE_LENS_ROTATIONAL_USAGE_KEY", "usage_percent")
 VMID_RE = re.compile(r"(?:vm|base)-(\d+)-disk-")
+QEMU_DISK_RE = re.compile(r"^(?:ide|sata|scsi|virtio)\d+$")
+LXC_MOUNT_RE = re.compile(r"^mp\d+$")
 
 
 def run_json(command):
@@ -32,6 +35,104 @@ def number(value):
         return float(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def properties(value):
+    """Parse Proxmox's comma-separated key/value configuration strings."""
+    result = {"source": ""}
+    for index, part in enumerate(str(value or "").split(",")):
+        if "=" in part:
+            key, item = part.split("=", 1)
+            result[key] = item
+        elif index == 0:
+            result["source"] = part
+    return result
+
+
+def configured_size(value):
+    match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([KMGTPE]?)\s*", str(value or ""), re.IGNORECASE)
+    if not match:
+        return 0
+    units = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4, "P": 1024**5, "E": 1024**6}
+    return float(match.group(1)) * units[match.group(2).upper()]
+
+
+def runtime_addresses(node, guest_type, vmid, config):
+    if guest_type == "lxc":
+        endpoint = ["pvesh", "get", f"/nodes/{node}/lxc/{vmid}/interfaces", "--output-format", "json"]
+    elif guest_type == "qemu" and str(config.get("agent", "0")).split(",", 1)[0] in {"1", "enabled=1"}:
+        endpoint = ["pvesh", "get", f"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces", "--output-format", "json"]
+    else:
+        return []
+    try:
+        interfaces = run_json(endpoint)
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+    addresses = []
+    for interface in interfaces if isinstance(interfaces, list) else []:
+        for address in interface.get("ip-addresses", []):
+            value = address.get("ip-address")
+            if address.get("ip-address-type") == "inet" and value and not value.startswith("127."):
+                addresses.append(value)
+        direct = interface.get("inet")
+        if direct and not direct.startswith("127."):
+            addresses.append(direct.split("/", 1)[0])
+    return list(dict.fromkeys(addresses))
+
+
+def guest_configuration(resource):
+    guest_type = resource.get("type", "")
+    vmid = int(resource.get("vmid", 0))
+    node = resource.get("node", socket.gethostname())
+    try:
+        config = run_json(["pvesh", "get", f"/nodes/{node}/{guest_type}/{vmid}/config", "--output-format", "json"])
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        config = {}
+
+    disks = []
+    for key, raw in config.items():
+        is_lxc_disk = guest_type == "lxc" and (key == "rootfs" or LXC_MOUNT_RE.fullmatch(key))
+        is_qemu_disk = guest_type == "qemu" and QEMU_DISK_RE.fullmatch(key)
+        if not (is_lxc_disk or is_qemu_disk):
+            continue
+        parsed = properties(raw)
+        if parsed.get("media") == "cdrom" or parsed.get("source") in {"none", "cloudinit"}:
+            continue
+        disks.append({
+            "name": key,
+            "source": parsed.get("source", ""),
+            "size": configured_size(parsed.get("size")),
+            "mountpoint": "/" if key == "rootfs" else parsed.get("mp"),
+        })
+
+    networks = []
+    configured_ips = []
+    for key, raw in config.items():
+        if not re.fullmatch(r"net\d+", key):
+            continue
+        parsed = properties(raw)
+        configured_ip = parsed.get("ip")
+        if configured_ip and configured_ip != "dhcp":
+            configured_ips.append(configured_ip.split("/", 1)[0])
+        networks.append({
+            "name": parsed.get("name") or key,
+            "bridge": parsed.get("bridge"),
+            "mac": parsed.get("hwaddr") or parsed.get("virtio") or parsed.get("e1000") or parsed.get("source"),
+            "configuredIp": configured_ip,
+        })
+
+    runtime_ips = runtime_addresses(node, guest_type, vmid, config) if resource.get("status") == "running" else []
+    sockets = max(1, int(number(config.get("sockets")) or 1))
+    cores = int(number(config.get("cores")) or number(resource.get("maxcpu")))
+    return {
+        "cpuAllocated": cores * sockets if guest_type == "qemu" else cores,
+        "memoryAllocated": number(config.get("memory")) * 1024**2,
+        "swapAllocated": number(config.get("swap")) * 1024**2 if guest_type == "lxc" else 0,
+        "onboot": bool(number(config.get("onboot"))),
+        "ipAddresses": list(dict.fromkeys(runtime_ips + configured_ips)),
+        "disks": disks,
+        "networks": networks,
+    }
 
 
 def rotational_status():
@@ -220,7 +321,10 @@ def collect(previous=None):
     elapsed = now - previous["time"] if previous else INTERVAL
     external_rotational = rotational_status()
     hdd_awake = external_rotational["state"] == "active"
-    refresh_topology = not previous or now - previous.get("topologyTime", 0) >= TOPOLOGY_INTERVAL or (hdd_awake and not previous.get("hddAwake", False))
+    resources = run_json(["pvesh", "get", "/cluster/resources", "--type", "vm", "--output-format", "json"])
+    resource_keys = {f'{item.get("type")}/{item.get("vmid")}' for item in resources}
+    known_guest_keys = set(previous.get("topology", {}).get("guestConfigs", {})) if previous else set()
+    refresh_topology = not previous or resource_keys != known_guest_keys or now - previous.get("topologyTime", 0) >= TOPOLOGY_INTERVAL or (hdd_awake and not previous.get("hddAwake", False))
     if refresh_topology:
         lsblk = run_json(["lsblk", "-J", "-b", "-o", "NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,ROTA,FSTYPE,MOUNTPOINTS,PKNAME"])
         physical = [item for item in lsblk.get("blockdevices", []) if item.get("type") == "disk"]
@@ -237,7 +341,13 @@ def collect(previous=None):
         except (subprocess.SubprocessError, KeyError, json.JSONDecodeError):
             lvs = []
             pvs = []
-        topology = {"physical": physical, "filesystems": filesystems, "lvs": lvs, "pvs": pvs}
+        with ThreadPoolExecutor(max_workers=min(6, max(1, len(resources)))) as executor:
+            configurations = executor.map(guest_configuration, resources)
+            guest_configs = {
+                f'{guest.get("type")}/{guest.get("vmid")}': configuration
+                for guest, configuration in zip(resources, configurations)
+            }
+        topology = {"physical": physical, "filesystems": filesystems, "lvs": lvs, "pvs": pvs, "guestConfigs": guest_configs}
         topology_time = now
     else:
         topology = previous["topology"]
@@ -246,6 +356,7 @@ def collect(previous=None):
         filesystems = topology["filesystems"]
         lvs = topology["lvs"]
         pvs = topology["pvs"]
+        guest_configs = topology.get("guestConfigs", {})
     refresh_hardware = not previous or now - previous.get("hardwareTime", 0) >= HARDWARE_INTERVAL
     if refresh_hardware:
         hardware = hardware_sample(physical, external_rotational)
@@ -255,7 +366,6 @@ def collect(previous=None):
         hardware_time = previous["hardwareTime"]
     counters = disk_counters([item["name"] for item in physical])
     thin_pools = {lv.get("pool_lv") for lv in lvs if lv.get("pool_lv")}
-    resources = run_json(["pvesh", "get", "/cluster/resources", "--type", "vm", "--output-format", "json"])
     host = host_sample()
 
     old_disks = previous.get("disks", {}) if previous else {}
@@ -264,6 +374,7 @@ def collect(previous=None):
     for guest in sorted(resources, key=lambda item: int(item.get("vmid", 0))):
         key = f'{guest.get("type")}/{guest.get("vmid")}'
         prior = old_guests.get(key, {})
+        configuration = guest_configs.get(key, {})
         guests.append({
             "vmid": int(guest.get("vmid", 0)), "name": guest.get("name") or key,
             "type": guest.get("type", "guest"), "status": guest.get("status", "unknown"),
@@ -273,6 +384,7 @@ def collect(previous=None):
             "writeRate": rate(number(guest.get("diskwrite")), prior.get("write"), elapsed),
             "receiveRate": rate(number(guest.get("netin")), prior.get("received"), elapsed),
             "transmitRate": rate(number(guest.get("netout")), prior.get("transmitted"), elapsed),
+            **configuration,
         })
 
     disks = []

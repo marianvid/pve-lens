@@ -6,6 +6,7 @@ A compact dashboard for understanding a Proxmox host at a glance: system health,
 
 ## Views
 
+- **Resources** lists the configured CPU, memory, storage and networking for every detected container and virtual machine.
 - [Storage](docs/storage.md) maps physical disks to pools, volumes and virtual-machine storage.
 - [Network](docs/network.md) shows physical links, throughput, link load and per-service traffic.
 
